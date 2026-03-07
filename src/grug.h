@@ -41,14 +41,7 @@ struct grug_entity {
 	void* data;
 };
 
-// TODO: There should only be a single kind of game function: game_fn_value. 
-// if there are no arguments, the arguments array should be empty
-// if there is no return value, the actual return value should just be ignored
-
-typedef void (*game_fn_void)(struct grug_state* gst, const union grug_value[]);
-typedef void (*game_fn_void_argless)(struct grug_state* gst);
-typedef union grug_value (*game_fn_value)(struct grug_state* gst, const union grug_value[]);
-typedef union grug_value (*game_fn_value_argless)(struct grug_state* gst);
+typedef union grug_value (*game_fn)(struct grug_state* gst, const union grug_value[]);
 
 enum grug_error_type_enum {
     grug_error_type_stack_overflow = 0,
@@ -401,10 +394,7 @@ struct grug_state* grug_init(struct grug_init_settings settings);
 // Reasons for failure include but are not limited to 
 // 	- function was not defined in `mod_api.json`. 
 // 	- function has already been registered
-bool grug_register_game_fn_void_argless(struct grug_state* gst, char const* game_fn_name, game_fn_void_argless fn);
-bool grug_register_game_fn_value_argless(struct grug_state* gst, char const* game_fn_name, game_fn_value_argless fn);
-bool grug_register_game_fn_void(struct grug_state* gst, char const* game_fn_name, game_fn_void fn);
-bool grug_register_game_fn_value(struct grug_state* gst, char const* game_fn_name, game_fn_value fn);
+bool grug_register_game_fn(struct grug_state* gst, char const* game_fn_name, game_fn fn);
 
 // Returns true if all game functions defined in mod_api.json are registered
 bool grug_all_game_functions_registered(struct grug_state* gst);
@@ -456,16 +446,15 @@ bool grug_call_on_function(struct grug_state* gst, grug_entity_id entity, grug_o
 #define GRUG_CALL_ARGLESS(_state, _entity, _on_fn_id) \
         grug_call_on_function(_state, _entity, _on_fn_id, NULL, 0); \
 
-// TODO: This doesn't work with the safe version because the length is required
 #define GRUG_CALL(_state, _entity, _on_fn_id, _args_count, ...) \
         grug_call_on_function(_state, _entity, _on_fn_id, (union grug_value[]) {__VA_ARGS__}, _args_count); \
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-static inline union grug_value GRUG_ARG_NUMBER(double v)      {union grug_value r; r._number = v; return;}
-static inline union grug_value GRUG_ARG_BOOL(bool v)          {union grug_value r; r._bool = v  ; return;}
-static inline union grug_value GRUG_ARG_STRING(char const* v) {union grug_value r; r._string = v; return;}
-static inline union grug_value GRUG_ARG_ID(grug_id v)         {union grug_value r; r._id = v    ; return;}
+static inline union grug_value GRUG_ARG_NUMBER(double v)      {union grug_value r; r._number = v; return r;}
+static inline union grug_value GRUG_ARG_BOOL(bool v)          {union grug_value r; r._bool = v  ; return r;}
+static inline union grug_value GRUG_ARG_STRING(char const* v) {union grug_value r; r._string = v; return r;}
+static inline union grug_value GRUG_ARG_ID(grug_id v)         {union grug_value r; r._id = v    ; return r;}
 #pragma GCC diagnostic pop
 
 // TODO: use a temporary allocator instead probably, might require a state though?

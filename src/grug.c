@@ -29,32 +29,7 @@ void grug_set_fast_mode(struct grug_state* gst, bool fast) {
     (void)fast;
     // TODO: implement
 }
-
-bool grug_register_game_fn_void_argless(struct grug_state* gst, char const* game_fn_name, game_fn_void_argless fn) {
-    (void)gst;
-    (void)game_fn_name;
-    (void)fn;
-    // TODO: implement
-	return false;
-}
-
-bool grug_register_game_fn_value_argless(struct grug_state* gst, char const* game_fn_name, game_fn_value_argless fn) {
-    (void)gst;
-    (void)game_fn_name;
-    (void)fn;
-    // TODO: implement
-	return false;
-}
-
-bool grug_register_game_fn_void(struct grug_state* gst, char const* game_fn_name, game_fn_void fn) {
-    (void)gst;
-    (void)game_fn_name;
-    (void)fn;
-    // TODO: implement
-	return false;
-}
-
-bool grug_register_game_fn_value(struct grug_state* gst, char const* game_fn_name, game_fn_value fn) {
+bool grug_register_game_fn(struct grug_state* gst, char const* game_fn_name, game_fn fn) {
     (void)gst;
     (void)game_fn_name;
     (void)fn;
