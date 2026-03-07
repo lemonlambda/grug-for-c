@@ -462,10 +462,10 @@ bool grug_call_on_function(struct grug_state* gst, grug_entity_id entity, grug_o
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
-static inline union grug_value GRUG_ARG_NUMBER(double v) {return (union grug_value){._number = v};}
-static inline union grug_value GRUG_ARG_BOOL(bool v) {return (union grug_value){._bool = v};}
-static inline union grug_value GRUG_ARG_STRING(char const* v) {return (union grug_value){._string = v};}
-static inline union grug_value GRUG_ARG_ID(grug_id v) {return (union grug_value){._id = v};}
+static inline union grug_value GRUG_ARG_NUMBER(double v)      {union grug_value r; r._number = v; return;}
+static inline union grug_value GRUG_ARG_BOOL(bool v)          {union grug_value r; r._bool = v  ; return;}
+static inline union grug_value GRUG_ARG_STRING(char const* v) {union grug_value r; r._string = v; return;}
+static inline union grug_value GRUG_ARG_ID(grug_id v)         {union grug_value r; r._id = v    ; return;}
 #pragma GCC diagnostic pop
 
 // TODO: use a temporary allocator instead probably, might require a state though?
