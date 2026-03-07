@@ -3,10 +3,12 @@
 struct grug_init_settings grug_default_settings(void) {
     return (struct grug_init_settings){ 
         // TODO: interpreter backend
+		.mod_api_path = 0,
+		.mod_api_path_len = 0,
+		.mods_dir_path = 0,
+		.mods_dir_path_len = 0,
+        .runtime_error_handler = {0},
         .backend = {.obj = 0, .vtable = 0},
-        .mods_folder = 0,
-        .runtime_error_handler = 0,
-        .user_alloc_obj = 0,
     };
 }
 
@@ -28,32 +30,36 @@ void grug_set_fast_mode(struct grug_state* gst, bool fast) {
     // TODO: implement
 }
 
-void grug_register_game_fn_void_argless(struct grug_state* gst, char const* game_fn_name, game_fn_void_argless fn) {
+bool grug_register_game_fn_void_argless(struct grug_state* gst, char const* game_fn_name, game_fn_void_argless fn) {
     (void)gst;
     (void)game_fn_name;
     (void)fn;
     // TODO: implement
+	return false;
 }
 
-void grug_register_game_fn_value_argless(struct grug_state* gst, char const* game_fn_name, game_fn_value_argless fn) {
+bool grug_register_game_fn_value_argless(struct grug_state* gst, char const* game_fn_name, game_fn_value_argless fn) {
     (void)gst;
     (void)game_fn_name;
     (void)fn;
     // TODO: implement
+	return false;
 }
 
-void grug_register_game_fn_void(struct grug_state* gst, char const* game_fn_name, game_fn_void fn) {
+bool grug_register_game_fn_void(struct grug_state* gst, char const* game_fn_name, game_fn_void fn) {
     (void)gst;
     (void)game_fn_name;
     (void)fn;
     // TODO: implement
+	return false;
 }
 
-void grug_register_game_fn_value(struct grug_state* gst, char const* game_fn_name, game_fn_value fn) {
+bool grug_register_game_fn_value(struct grug_state* gst, char const* game_fn_name, game_fn_value fn) {
     (void)gst;
     (void)game_fn_name;
     (void)fn;
     // TODO: implement
+	return false;
 }
 
 struct grug_on_fns grug_get_fn_ids(struct grug_state* gst) {
@@ -71,10 +77,9 @@ const struct grug_mod_dir* grug_get_mods(struct grug_state* gst) {
     return 0;
 }
 
-grug_entity_id grug_create_entity(struct grug_state* gst, grug_file_id script, grug_id id) {
+grug_entity_id grug_create_entity(struct grug_state* gst, grug_file_id script) {
     (void)gst;
     (void)script;
-    (void)id;
     // TODO: implement
     return 0;
 }
@@ -113,11 +118,29 @@ void grug_deinit(struct grug_state* gst) {
     // TODO: implement
 }
 
-void grug_backend_call_argless(struct grug_state* gst, grug_on_fn_id fn, grug_entity_id entity) {
-    (void)gst;
-    (void)fn;
-    (void)entity;
+bool grug_all_game_functions_registered(struct grug_state* gst) {
+	(void) gst;
     // TODO: implement
+	return false;
+}
+
+bool grug_call_on_function(struct grug_state* gst, grug_entity_id entity, grug_on_fn_id on_fn_id, union grug_value* args, size_t args_len) {
+    (void)gst;
+    (void)on_fn_id;
+    (void)entity;
+	(void)args;
+	(void)args_len;
+    // TODO: implement
+	return false;
+}
+
+bool grug_call_on_function_raw(struct grug_state* gst, grug_entity_id entity, grug_on_fn_id on_fn_id, union grug_value* args) {
+    (void)gst;
+    (void)on_fn_id;
+    (void)entity;
+	(void)args;
+    // TODO: implement
+	return false;
 }
 
 void grug_backend_call(struct grug_state* gst, grug_on_fn_id fn, grug_entity_id entity, const union grug_value args[]) {

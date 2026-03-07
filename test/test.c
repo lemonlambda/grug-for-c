@@ -1,14 +1,18 @@
 #include <stdio.h>
 #include <inttypes.h>
+#include <assert.h>
 
 #include <grug.h>
 #include <string.h>
 
 // Game fns get direct access to the grug state / context from which they are called
 // For example, in a system with co-routines, each fiber may have its own grug state.
-void game_fn_print_string(struct grug_state* gst, grug_id me_caller, const union grug_value args[]) {
+void game_fn_print_string(struct grug_state* gst, const union grug_value args[]) {
     (void)gst;
-    printf("Entity %" PRIu64 " said %s\n", me_caller, args[0]._string);
+	grug_id me_caller = args[0]._id;
+	// Error here on clang with -pedantic errors, apparantly PRIu64 is defined
+	// as a non-standard format specifier
+    printf("Entity %" PRIu64 " said %s\n", me_caller, args[1]._string);
 }
 
 bool find_file(struct grug_mod_dir const* dir, grug_file_id* out_id, char const* name) {
@@ -43,6 +47,7 @@ int main(void) {
 
     // let grug know where to call the print_string game function
     grug_register_game_fn_void(gst, "print_string", game_fn_print_string);
+	assert(grug_all_game_functions_registered(gst));
 
     // Grab the "ID" of the Dog::on_spawn and Dog::on_bark functions
     // This is not a normal grug object id, but a special function id
@@ -83,19 +88,17 @@ int main(void) {
     }
 
     // this is the object / entity ID of the dog
-    grug_id dog1 = 1;
     // The initialization of members might call game fns, so beware that creating an entity may call game fns
-    // grug holds on to the id (dog1) so don't change it without re-creating the entity too.
-    grug_entity_id dog1_entity = grug_create_entity(gst, labrador_script, dog1);
+    grug_entity_id dog1 = grug_create_entity(gst, labrador_script);
+	assert(dog1);
     // tell this dog that it has spawned into the world
-    GRUG_CALL_ARGLESS(gst, on_spawn_fn_id, dog1_entity);
+    GRUG_CALL_ARGLESS(gst, dog1, on_spawn_fn_id);
     
-    grug_id dog2 = 2;
-    grug_entity_id dog2_entity = grug_create_entity(gst, labrador_script, dog2);
-    GRUG_CALL_ARGLESS(gst, on_spawn_fn_id, dog2_entity);
+    grug_entity_id dog2 = grug_create_entity(gst, labrador_script);
+    GRUG_CALL_ARGLESS(gst, dog2, on_spawn_fn_id);
     
-    GRUG_CALL(gst, on_bark_fn_id, dog1_entity, GRUG_ARG_STRING("Woof"));
-    GRUG_CALL(gst, on_bark_fn_id, dog2_entity, GRUG_ARG_STRING("Arf"));
+    GRUG_CALL(gst, dog1, on_bark_fn_id, 1, GRUG_ARG_STRING("Woof"));
+    GRUG_CALL(gst, dog2, on_bark_fn_id, 1, GRUG_ARG_STRING("Arf"));
 
     while(true) {
         // This reloads any script and resource changes, recompiling files if necessary
@@ -111,12 +114,12 @@ int main(void) {
 
             if(file->id == labrador_script) {
                 // re-call on_spawn - since the members get reset upon reload.
-                GRUG_CALL_ARGLESS(gst, on_spawn_fn_id, dog1_entity);
-                GRUG_CALL_ARGLESS(gst, on_spawn_fn_id, dog2_entity);
+                GRUG_CALL_ARGLESS(gst, dog1, on_spawn_fn_id);
+                GRUG_CALL_ARGLESS(gst, dog1, on_spawn_fn_id);
                 
                 // call these functions again for demonstration
-                GRUG_CALL(gst, on_bark_fn_id, dog1_entity, GRUG_ARG_STRING("Woof"));
-                GRUG_CALL(gst, on_bark_fn_id, dog2_entity, GRUG_ARG_STRING("Arf"));
+                GRUG_CALL(gst, dog1, on_bark_fn_id, 1, GRUG_ARG_STRING("Woof"));
+                GRUG_CALL(gst, dog2, on_bark_fn_id, 1, GRUG_ARG_STRING("Arf"));
             }
         }
     }
