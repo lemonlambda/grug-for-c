@@ -17,10 +17,10 @@ typedef grug_id grug_file_id;
 #define INVALID_GRUG_FILE_ID UINT64_MAX
 
 union grug_value {
-    double _number;
-    bool _bool;
-    char const* _string;
-    grug_id _id;
+	double _number;
+	bool _bool;
+	char const* _string;
+	grug_id _id;
 };
 
 struct grug_state;
@@ -37,84 +37,135 @@ struct grug_entity {
 typedef union grug_value (*game_fn)(struct grug_state* gst, const union grug_value[]);
 
 enum grug_error_type_enum {
-    grug_error_type_stack_overflow = 0,
-    grug_error_type_time_limit_exceeded,
-    grug_error_type_game_fn_error,
+	grug_error_type_none = 0,
+	grug_error_type_init,
+	grug_error_type_compile,
+	grug_error_type_runtime_stack_overflow,
+	grug_error_type_runtime_time_limit_exceeded,
+	grug_error_type_runtime_game_fn_error,
 };
 
 typedef uint32_t grug_error_type;
 
-struct grug_updates_list {
-    size_t count;
-    struct grug_file** updates;
+struct grug_error {
+	grug_error_type error_type;
+	/// A message that can be printed instead of parsing the data part of this struct
+	char const* message;
+	size_t message_len;
+	union {
+		struct {
+			/// The file where the error occurred
+			char const* file_name;
+			size_t file_name_len;
+			grug_file_id file;
+			/// The function where the error occurred
+			char const* function_name;
+			size_t function_name_len;
+			/// Note: will be set the most recently called on fn if the error occurred in a helper fn
+			grug_on_fn_id function;
+			/// The line number where the error occurred
+			size_t line_number;
+			/// The column number where the error occurred
+			size_t column_number;
+			/// the character index into the file where the error occurred.
+			size_t first_character;
+			/// The number of characters to highlight when reporting the error (how many characters to put the squiggly lines under)
+			size_t num_characters;
+		} runtime;
+		struct {
+			/// The file where the error occurred
+			char const* file_name;
+			size_t file_name_len;
+			grug_file_id file;
+			/// The function where the error occurred
+			char const* function_name;
+			size_t function_name_len;
+			/// Note: will be set 0 (no id) error occurred in a helper fn
+			grug_on_fn_id function;
+			/// The line number where the error occurred
+			size_t line_number;
+			/// The column number where the error occurred
+			size_t column_number;
+			/// the character index into the file where the error occurred.
+			size_t first_character;
+			/// The number of characters to highlight when reporting the error (how many characters to put the squiggly lines under)
+			size_t num_characters;
+			char const* error_code;
+			size_t error_code_len;
+		} compiletime;
+	} data;
 };
 
-// TODO: use strings or give the user the file_id and on_fn_id?
+struct grug_error_list {
+	/// May be null of num_errors is 0.
+	struct grug_error* errors;
+	size_t num_errors;
+};
+
+struct grug_updates_list {
+	size_t count;
+	struct grug_file** updates;
+};
+
 struct grug_runtime_error_handler {
-	void* data;
+	void* user_data;
 	void (*drop_fn)(void*);
+	/// The handler function is expected to pull the error from the grug state, since the grug_error struct has grown to be rather large.
 	void (*handler_fn)(
-		void* data,
-		uint32_t err_kind,
-		char* reason,
-		size_t reason_len,
-		char* on_fn_name,
-		size_t on_fn_name_len,
-		char* script_path,
-		size_t script_path_len
+		struct grug_state* gst,
+		void* user_data
 	);
 };
 
 struct grug_on_fn_entry {
-    char const* entity_name;
-    char const* on_fn_name;
-    grug_on_fn_id id;
+	char const* entity_name;
+	char const* on_fn_name;
+	grug_on_fn_id id;
 };
 
 struct grug_on_fns {
-    struct grug_on_fn_entry* entries;
-    size_t count;
+	struct grug_on_fn_entry* entries;
+	size_t count;
 };
 
 struct grug_file {
-    /// fill name of the mod file (ex: ak47-Gun.grug)
-    char const* name;
-    /// what entity type this file implements (ex: Gun)
-    char const* entity_type;
-    /// the name of the entity
-    char const* entity_name;
+	/// fill name of the mod file (ex: ak47-Gun.grug)
+	char const* name;
+	/// what entity type this file implements (ex: Gun)
+	char const* entity_type;
+	/// the name of the entity
+	char const* entity_name;
 
-    /// file id
-    grug_file_id id;
+	/// file id
+	grug_file_id id;
 
-    /// Null if there is no error in this file
-    char* error_msg;
-    size_t error_line_number;
+	/// Null if there is no error in this file
+	struct grug_error* error;
 
-    /// PRIVATE, When this file was last modified
-    int64_t _mtime;
+	/// PRIVATE, When this file was last modified
+	int64_t _mtime;
 
-    /// PRIVATE, when resources seen by this script were last modified
-    int64_t _resource_mtimes;
-    size_t _resource_mtimes_size;
+	/// PRIVATE, when resources seen by this script were last modified
+	int64_t _resource_mtimes;
+	size_t _resource_mtimes_size;
 
-    bool _seen;
+	bool _seen;
 };
 
 struct grug_mod_dir {
-    /// Name of this folder
-    char const* name;
+	/// Name of this folder
+	char const* name;
 
-    struct grug_mod_dir** mods;
-    size_t mods_size;
-    
-    struct grug_file* files;
-    size_t files_size;  
-    
-    size_t _mods_capacity;
-    size_t _files_capacity;
+	struct grug_mod_dir** mods;
+	size_t mods_size;
 
-    bool _seen;
+	struct grug_file* files;
+	size_t files_size;  
+
+	size_t _mods_capacity;
+	size_t _files_capacity;
+
+	bool _seen;
 };
 
 /* AST */
@@ -285,7 +336,7 @@ struct grug_helper_function {
 };
 
 struct grug_ast {
-    struct grug_member_variable* members;
+	struct grug_member_variable* members;
 	size_t members_count;
 
 	/* 
@@ -352,7 +403,7 @@ typedef bool (*grug_backend_vtable_call_on_function_raw)(void* backend_data, str
 typedef bool (*grug_backend_vtable_call_on_function)(void* backend_data, struct grug_state* gst, struct grug_entity* entity, uint64_t on_fn_index, union grug_value* args, size_t args_len); 
 
 struct grug_backend_vtable {
-    grug_backend_vtable_compile_script compile_script;
+	grug_backend_vtable_compile_script compile_script;
 	grug_backend_vtable_init_entity init_entity;
 	grug_backend_vtable_clear_entities clear_entities;
 	grug_backend_vtable_destroy_entity_data entity_data;
@@ -362,8 +413,8 @@ struct grug_backend_vtable {
 };
 
 struct grug_backend {
-    void* obj;
-    struct grug_backend_vtable* vtable;
+	void* obj;
+	struct grug_backend_vtable* vtable;
 };
 
 // TODO: This should prolly be implementation specific
@@ -379,7 +430,11 @@ struct grug_init_settings {
 
 struct grug_init_settings grug_default_settings(void);
 
+// Returns a non-null but "empty" state upon an error
 struct grug_state* grug_init(struct grug_init_settings settings);
+
+/// Returns a list of errors that have occurred. This list is cleared (and the memory returned here is invalidated) at the start of grug_update().
+struct grug_error_list grug_get_errors(struct grug_state* gst);
 
 // returns true if registration is successful
 // returns false if not.
@@ -400,6 +455,7 @@ struct grug_on_fns grug_get_fn_ids(struct grug_state* gst);
 
 // Compiles a single file from the mods directory
 grug_file_id grug_compile_file(struct grug_state* gst, const char* path);
+
 // Compile a file from a string. Useful for prototypeing or for built in scripts
 // If it overlaps with a path on the actual filesystem, it is given the same id as that path
 grug_file_id grug_compile_file_from_str(struct grug_state* gst, const char* path, char* file_text);
@@ -431,7 +487,8 @@ struct grug_updates_list grug_update(struct grug_state* gst);
 void grug_deinit(struct grug_state* gst);
 
 void grug_swap_backend(struct grug_state* gst, struct grug_backend backend);
-// TODO: Should this be done per script? or maybe per function call?
+
+// The game may call this at any point, even within an on_fn. However, a backend is entirely free to ignore this call if it happens within an on fn, so beware.
 void grug_set_fast_mode(struct grug_state* gst, bool fast);
 
 // returns false if on function could not be executed, if the id given isn't an entity, or if there was a runtime error
@@ -440,10 +497,10 @@ bool grug_call_on_function_raw(struct grug_state* gst, grug_id entity, grug_on_f
 bool grug_call_on_function(struct grug_state* gst, grug_id entity, grug_on_fn_id on_fn_id, union grug_value* args, size_t args_len);
 
 #define GRUG_CALL_ARGLESS(_state, _entity, _on_fn_id) \
-        grug_call_on_function(_state, _entity, _on_fn_id, NULL, 0); \
+		grug_call_on_function(_state, _entity, _on_fn_id, NULL, 0); \
 
 #define GRUG_CALL(_state, _entity, _on_fn_id, _args_count, ...) \
-        grug_call_on_function(_state, _entity, _on_fn_id, (union grug_value[]) {__VA_ARGS__}, _args_count); \
+		grug_call_on_function(_state, _entity, _on_fn_id, (union grug_value[]) {__VA_ARGS__}, _args_count); \
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
