@@ -19,8 +19,15 @@ typedef grug_id grug_file_id;
 union grug_value {
 	double _number;
 	bool _bool;
+	/// Null terminated, this doesn't use the grug_string type because benchmarks showed adding the extra 8 bytes per value halved argument passing performance even for non-string types.
 	char const* _string;
 	grug_id _id;
+};
+
+/// combines a null terminated C string with a length
+struct grug_string {
+	char* ptr;
+	size_t len;
 };
 
 struct grug_state;
@@ -37,12 +44,12 @@ struct grug_entity {
 typedef union grug_value (*game_fn)(struct grug_state* gst, const union grug_value[]);
 
 enum grug_error_type_enum {
-	grug_error_type_none = 0,
-	grug_error_type_init,
-	grug_error_type_compile,
-	grug_error_type_runtime_stack_overflow,
-	grug_error_type_runtime_time_limit_exceeded,
-	grug_error_type_runtime_game_fn_error,
+	GRUG_ERROR_TYPE_NONE = 0,
+	GRUG_ERROR_TYPE_INIT,
+	GRUG_ERROR_TYPE_COMPILE,
+	GRUG_ERROR_TYPE_RUNTIME_STACK_OVERFLOW,
+	GRUG_ERROR_TYPE_RUNTIME_TIME_LIMIT_EXCEEDED,
+	GRUG_ERROR_TYPE_RUNTIME_GAME_FN_ERROR,
 };
 
 typedef uint32_t grug_error_type;
@@ -50,17 +57,14 @@ typedef uint32_t grug_error_type;
 struct grug_error {
 	grug_error_type error_type;
 	/// A message that can be printed instead of parsing the data part of this struct
-	char const* message;
-	size_t message_len;
+	struct grug_string message;
 	union {
 		struct {
 			/// The file where the error occurred
-			char const* file_name;
-			size_t file_name_len;
+			struct grug_string file_name;
 			grug_file_id file;
 			/// The function where the error occurred
-			char const* function_name;
-			size_t function_name_len;
+			struct grug_string function_name;
 			/// Note: will be set the most recently called on fn if the error occurred in a helper fn
 			grug_on_fn_id function;
 			/// The line number where the error occurred
@@ -74,12 +78,10 @@ struct grug_error {
 		} runtime;
 		struct {
 			/// The file where the error occurred
-			char const* file_name;
-			size_t file_name_len;
+			struct grug_string file_name;
 			grug_file_id file;
 			/// The function where the error occurred
-			char const* function_name;
-			size_t function_name_len;
+			struct grug_string function_name;
 			/// Note: will be set 0 (no id) error occurred in a helper fn
 			grug_on_fn_id function;
 			/// The line number where the error occurred
@@ -90,8 +92,7 @@ struct grug_error {
 			size_t first_character;
 			/// The number of characters to highlight when reporting the error (how many characters to put the squiggly lines under)
 			size_t num_characters;
-			char const* error_code;
-			size_t error_code_len;
+			struct grug_string error_code;
 		} compiletime;
 	} data;
 };
@@ -118,8 +119,8 @@ struct grug_runtime_error_handler {
 };
 
 struct grug_on_fn_entry {
-	char const* entity_name;
-	char const* on_fn_name;
+	struct grug_string entity_name;
+	struct grug_string on_fn_name;
 	grug_on_fn_id id;
 };
 
@@ -130,11 +131,11 @@ struct grug_on_fns {
 
 struct grug_file {
 	/// fill name of the mod file (ex: ak47-Gun.grug)
-	char const* name;
+	struct grug_string name;
 	/// what entity type this file implements (ex: Gun)
-	char const* entity_type;
+	struct grug_string entity_type;
 	/// the name of the entity
-	char const* entity_name;
+	struct grug_string entity_name;
 
 	/// file id
 	grug_file_id id;
@@ -154,7 +155,7 @@ struct grug_file {
 
 struct grug_mod_dir {
 	/// Name of this folder
-	char const* name;
+	struct grug_string name;
 
 	struct grug_mod_dir** mods;
 	size_t mods_size;
@@ -168,9 +169,59 @@ struct grug_mod_dir {
 	bool _seen;
 };
 
+enum grug_token_type_enum {
+	GRUG_TOKEN_OPEN_PARENTHESIS,
+	GRUG_TOKEN_CLOSE_PARENTHESIS,
+	GRUG_TOPEN_OPEN_BRACE,
+	GRUG_TOKEN_CLOSE_BRACE,
+	GRUG_TOKEN_PLUS,
+	GRUG_TOKEN_MINUS,
+	GRUG_TOKEN_MULTIPLICATION,
+	GRUG_TOKEN_DIVISION,
+	GRUG_TOKEN_COMMA,
+	GRUG_TOKEN_NEWLINE,
+	GRUG_TOKEN_EQUALS,
+	GRUG_TOKEN_NOT_EQUALS,
+	GRUG_TOKEN_ASSIGNMENT,
+	GRUG_TOKEN_GREATER_OR_EQUAL,
+    GRUG_TOKEN_GREATER,
+    GRUG_TOKEN_LESS_OR_EQUAL,
+    GRUG_TOKEN_LESS,
+    GRUG_TOKEN_AND,
+    GRUG_TOKEN_OR,
+    GRUG_TOKEN_NOT,
+    GRUG_TOKEN_TRUE,
+    GRUG_TOKEN_FALSE,
+    GRUG_TOKEN_IF,
+    GRUG_TOKEN_ELSE,
+    GRUG_TOKEN_WHILE,
+    GRUG_TOKEN_BREAK,
+    GRUG_TOKEN_RETURN,
+    GRUG_TOKEN_CONTINUE,
+    GRUG_TOKEN_SPACE,
+    GRUG_TOKEN_INDENTATION,
+    GRUG_TOKEN_STRING,
+    GRUG_TOKEN_WORD,
+    GRUG_TOKEN_NUMBER,
+    GRUG_TOKEN_COMMENT,
+};
+
+typedef uint32_t grug_token_type;
+
+struct grug_token {
+	grug_token_type type;
+	// Only defined for tokens that actually hold a string of contents.
+	struct grug_string contents;
+};
+
+struct grug_tokens {
+	struct grug_token* tokens;
+	size_t tokens_len;
+};
+
 /* AST */
 
-enum grug_type_enum {
+enum grug_type_type_enum {
 	GRUG_TYPE_VOID = 0,
 	GRUG_TYPE_BOOL,
 	GRUG_TYPE_NUMBER,
@@ -179,14 +230,14 @@ enum grug_type_enum {
 	GRUG_TYPE_RESOURCE,
 	GRUG_TYPE_ENTITY,
 };
-typedef uint32_t grug_type_enum_type;
+typedef uint32_t grug_type_type;
 
 struct grug_type {
-	grug_type_enum_type type;
+	grug_type_type type;
 	union {
-		char* custom_name;   /* optionally used if type is GRUG_TYPE_ID */
-		char* resource_type; /* used if type is GRUG_TYPE_RESOURCE */
-		char* entity_type;   /* optionally used if type is GRUG_TYPE_ENTITY */
+		struct grug_string custom_name;   /* optionally used if type is GRUG_TYPE_ID */
+		struct grug_string resource_type; /* used if type is GRUG_TYPE_RESOURCE */
+		struct grug_string entity_type;   /* optionally used if type is GRUG_TYPE_ENTITY */
 	} extra_data;
 };
 
@@ -221,6 +272,7 @@ enum grug_expr_type_enum {
 	GRUG_EXPR_TYPE_ENTITY,
 	GRUG_EXPR_TYPE_IDENTIFIER,
 	GRUG_EXPR_TYPE_NUMBER,
+	GRUG_EXPR_TYPE_NOTHING,
 	/* everything above this is a literal expr */
 	GRUG_EXPR_TYPE_UNARY,
 	GRUG_EXPR_TYPE_BINARY,
@@ -231,20 +283,20 @@ typedef uint32_t grug_expr_type;
 
 // TODO: add location info to expressions
 struct grug_expr {
-	struct grug_type* result_type; /* should be null before type checking and filled in afterwards */
+	struct grug_type result_type; /* should be undetermined before type checking and filled in afterwards */
 
 	/* Note: grug_rs puts the following two fields into a separate struct */ 
 	/* This may cause a layout mismatch if any fields are added between result_type and type */
 	/* If that is an issue, it can be solved by putting `type` and `expr_data` into an anonymous struct */
 	grug_expr_type type;
 	union {
-		char* string;
-		char* resource;
-		char* entity;
-		char* identifier_name;
+		struct grug_string string;
+		struct grug_string resource;
+		struct grug_string entity;
+		struct grug_string identifier_name;
 		struct {
 			double value;
-			char* string;
+			struct grug_string string;
 		} number;
 		struct {
 			grug_unary_operator op;
@@ -256,7 +308,7 @@ struct grug_expr {
 			struct grug_expr* right;
 		} binary;
 		struct {
-			char* function_name;
+			struct grug_string function_name;
 			struct grug_expr* args;
 			size_t args_count;
 			void* game_fn_ptr;
@@ -266,7 +318,7 @@ struct grug_expr {
 };
 
 struct grug_member_variable {
-	char* name;
+	struct grug_string name;
 	struct grug_type type; 
 	struct grug_expr assignment_expr; 
 };
@@ -282,57 +334,68 @@ enum grug_statement_type_enum {
 	GRUG_STATEMENT_CONTINUE,
 	GRUG_STATEMENT_EMPTY,
 };
+
+// declare struct so the circular references work
+/// ast statement
+struct grug_statement;
+
+struct grug_block {
+	struct grug_statement* statements;
+	size_t statements_len;
+};
+
+struct grug_if_branch {
+	struct grug_expr cond;
+	struct grug_block block;
+};
+
 typedef uint32_t grug_statement_type;
 
 struct grug_statement {
 	grug_statement_type type;
 	union {
 		struct {
-			char* name;
-			struct grug_type* type; /* optional */
+			struct grug_string name;
+			struct grug_type type; /* optional */
 			struct grug_expr assignment_expr; 
 		} variable;
 		struct grug_expr call;
 		struct {
-			struct grug_expr condition;
-			bool chained;
-			struct grug_statement* if_block;
-			size_t if_block_len;
-			struct grug_statement* else_block;
-			size_t else_block_len;
+			struct grug_if_branch branch;
+			// Each branch is an if->do
+			struct grug_if_branch* additional_branches;
+			size_t additional_branches_len;
+			struct grug_block else_block;
 		} if_stmt;
 		struct {
 			struct grug_expr condition;
-			struct grug_statement* block;
-			size_t block_len;
+			struct grug_block block;
 		} while_stmt;
 		struct {
-			struct grug_expr* expr; /* Optional */
+			struct grug_expr expr; /* Optional */
 		} return_stmt;
-		char* comment;
+		struct grug_string comment;
 	} statement_data;
 };
 
 struct grug_argument {
-	char* name; 
+	struct grug_string name; 
 	struct grug_type type;
 };
 
 struct grug_on_function {
-	char* name;
+	struct grug_string name;
 	struct grug_argument* arguments;
 	size_t arguments_len;
-	struct grug_statement* body_statements;
-	size_t body_statements_len;
+	struct grug_block block;
 };
 
 struct grug_helper_function {
-	char* name;
+	struct grug_string name;
 	struct grug_type return_type;
 	struct grug_argument* arguments;
 	size_t arguments_len;
-	struct grug_statement* body_statements;
-	size_t body_statements_len;
+	struct grug_block block;
 };
 
 struct grug_ast {
@@ -420,10 +483,8 @@ struct grug_backend {
 // TODO: This should prolly be implementation specific
 struct grug_init_settings {
 	// TODO: We probably want a way to define the mod_api as a string (at least for prototyping)
-	char* mod_api_path;
-	size_t mod_api_path_len;
-	char* mods_dir_path;
-	size_t mods_dir_path_len;
+	struct grug_string mod_api_path;
+	struct grug_string mods_dir_path;
 	struct grug_runtime_error_handler runtime_error_handler;
 	struct grug_backend backend;
 };
@@ -510,13 +571,26 @@ static inline union grug_value GRUG_ARG_STRING(char const* v) {union grug_value 
 static inline union grug_value GRUG_ARG_ID(grug_id v)         {union grug_value r; r._id = v    ; return r;}
 #pragma GCC diagnostic pop
 
-// TODO: use a temporary allocator instead probably, might require a state though?
-struct grug_ast* grug_to_ast(char const* file_str, size_t file_len);
-struct grug_ast* json_to_ast(char const* file_str, size_t file_len);
-void grug_free_ast(struct grug_ast* ast);
-char const* ast_to_json(struct grug_ast* ast, size_t* out_len);
-char const* ast_to_grug(struct grug_ast* ast, size_t* out_len);
-void grug_free_string(char const* str, size_t len);
+// This is basically a wrapper of malloc, but it's here to allow for a sensible alloc -> free lifetime with a pair of functions
+// it does also allocate space for a null terminator
+struct grug_string grug_alloc_string(size_t len);
+void grug_free_string(struct grug_string str);
+
+void grug_free_tokens(struct grug_tokens tokens);
+
+void grug_free_ast(struct grug_ast ast);
+
+struct grug_tokens grug_to_tokens(struct grug_string grug);
+struct grug_ast tokens_to_ast(struct grug_tokens tokens);
+struct grug_tokens ast_to_tokens(struct grug_ast ast);
+struct grug_string tokens_to_grug(struct grug_tokens tokens);
+struct grug_ast json_to_ast(struct grug_string json);
+struct grug_string ast_to_json(struct grug_ast ast);
+
+struct grug_ast grug_to_ast(struct grug_string grug);
+struct grug_string ast_to_grug(struct grug_ast ast);
+struct grug_string grug_to_json(struct grug_string grug);
+struct grug_string json_to_grug(struct grug_string json);
 
 #ifdef __cplusplus
 }

@@ -19,11 +19,6 @@ on_bark(sound: string) {
 }
 ```
 
-## API feature requirements
-- round-trip grug file -> tokens -> json -> tokens - > grug file,
-- unwinding the grug stack,
-- error handling, for compile-time, runtime, and game errors,
-
 ## options
 
 Here are your options as someone compiling grug:

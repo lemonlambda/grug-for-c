@@ -21,10 +21,10 @@ bool find_file(struct grug_mod_dir const* dir, grug_file_id* out_id, char const*
         struct grug_file* file = &dir->files[file_index];
         // while looking for file is not the right place to report errors, but they need to be reported somewhere and doing it here works.
         if(file->error) {
-            printf("File %s has an error on line %i: %s\n", file->name, (int)file->error->data.compiletime.line_number, file->error->message);
+            printf("File %s has an error on line %i: %s\n", file->name.ptr, (int)file->error->data.compiletime.line_number, file->error->message.ptr);
         }
 
-        if(strcmp(file->name, name)) {
+        if(strcmp(file->name.ptr, name)) {
             *out_id = file->id;
             return true;
         }
@@ -61,11 +61,11 @@ int main(void) {
     for(size_t index = 0; index < on_fns.count; ++index) {
         struct grug_on_fn_entry entry = on_fns.entries[index];
 
-        if(strcmp(entry.entity_name, "Dog")) {
-            if(strcmp(entry.on_fn_name, "on_spawn")) {
+        if(strcmp(entry.entity_name.ptr, "Dog")) {
+            if(strcmp(entry.on_fn_name.ptr, "on_spawn")) {
                 on_spawn_fn_id = entry.id;
                 found_on_spawn = true;
-            } else if(strcmp(entry.on_fn_name, "on_bark")) {
+            } else if(strcmp(entry.on_fn_name.ptr, "on_bark")) {
                 on_bark_fn_id = entry.id;
                 found_on_bark = true;
             }
@@ -111,7 +111,7 @@ int main(void) {
         for(size_t i=0; i<updates.count; ++i) {
             struct grug_file* file = updates.updates[i];
             if(file->error) {
-                printf("File %s has an error: %s\n", file->name, file->error->message);
+                printf("File %s has an error: %s\n", file->name.ptr, file->error->message.ptr);
             }
 
             if(file->id == labrador_script) {
