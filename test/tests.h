@@ -8,50 +8,50 @@
 #include <stddef.h> // Provides size_t
 #include <stdint.h> // Provides uint32_t
 
-#ifndef GRUG_TYPE_NUMBER
-    #define GRUG_TYPE_NUMBER double
+#ifndef TEST_GRUG_TYPE_NUMBER
+    #define TEST_GRUG_TYPE_NUMBER double
 #endif
-#ifndef GRUG_TYPE_BOOL
-    #define GRUG_TYPE_BOOL bool
+#ifndef TEST_GRUG_TYPE_BOOL
+    #define TEST_GRUG_TYPE_BOOL bool
 #endif
-#ifndef GRUG_TYPE_STRING
-    #define GRUG_TYPE_STRING const char*
+#ifndef TEST_GRUG_TYPE_STRING
+    #define TEST_GRUG_TYPE_STRING const char*
 #endif
-#ifndef GRUG_TYPE_ID
-    #define GRUG_TYPE_ID uint64_t
-#endif
-
-#ifndef GRUG_TYPE_ON_FN_ID
-    #define GRUG_TYPE_ON_FN_ID uint64_t
+#ifndef TEST_GRUG_TYPE_ID
+    #define TEST_GRUG_TYPE_ID uint64_t
 #endif
 
-union grug_value {
-#ifndef GRUG_NO_NUMBER
-    GRUG_TYPE_NUMBER _number;
+#ifndef TEST_GRUG_TYPE_ON_FN_ID
+    #define TEST_GRUG_TYPE_ON_FN_ID uint64_t
 #endif
-#ifndef GRUG_NO_BOOL
-    GRUG_TYPE_BOOL _bool;
+
+union test_grug_value {
+#ifndef TEST_GRUG_NO_NUMBER
+    TEST_GRUG_TYPE_NUMBER _number;
 #endif
-#ifndef GRUG_NO_STRING
-    GRUG_TYPE_STRING _string;
+#ifndef TEST_GRUG_NO_BOOL
+    TEST_GRUG_TYPE_BOOL _bool;
 #endif
-#ifndef GRUG_NO_ID
-    GRUG_TYPE_ID _id;
+#ifndef TEST_GRUG_NO_STRING
+    TEST_GRUG_TYPE_STRING _string;
+#endif
+#ifndef TEST_GRUG_NO_ID
+    TEST_GRUG_TYPE_ID _id;
 #endif
 };
 
-#define CALL(state, game_fn_name, ...) p_game_fn_##game_fn_name((state), (const union grug_value[]){ __VA_ARGS__ })
+#define TEST_CALL(state, game_fn_name, ...) p_game_fn_##game_fn_name((state), (const union test_grug_value[]){ __VA_ARGS__ })
 
-#define CALL_ARGLESS(state, game_fn_name) p_game_fn_##game_fn_name((state), NULL)
+#define TEST_CALL_ARGLESS(state, game_fn_name) p_game_fn_##game_fn_name((state), NULL)
 
-typedef union grug_value (*game_fn)(void* state, const union grug_value[]);
+typedef union test_grug_value (*test_game_fn)(void* state, const union test_grug_value[]);
 
-static inline union grug_value grug_number(GRUG_TYPE_NUMBER v) { union grug_value r; r._number = v; return r; }
-static inline union grug_value grug_bool(GRUG_TYPE_BOOL v) { union grug_value r; r._bool = v; return r; }
-static inline union grug_value grug_string(GRUG_TYPE_STRING v) { union grug_value r; r._string = v; return r; }
-static inline union grug_value grug_id(GRUG_TYPE_ID v) { union grug_value r; r._id = v; return r; }
+static inline union test_grug_value test_grug_number(TEST_GRUG_TYPE_NUMBER v) { union test_grug_value r; r._number = v; return r; }
+static inline union test_grug_value test_grug_bool(TEST_GRUG_TYPE_BOOL v) { union test_grug_value r; r._bool = v; return r; }
+static inline union test_grug_value test_grug_string(TEST_GRUG_TYPE_STRING v) { union test_grug_value r; r._string = v; return r; }
+static inline union test_grug_value test_grug_id(TEST_GRUG_TYPE_ID v) { union test_grug_value r; r._id = v; return r; }
 
-enum grug_runtime_error_type {
+enum test_grug_runtime_error_type {
 	GRUG_ON_FN_STACK_OVERFLOW,
 	GRUG_ON_FN_TIME_LIMIT_EXCEEDED,
 	GRUG_ON_FN_GAME_FN_ERROR,
@@ -64,13 +64,13 @@ enum grug_runtime_error_type {
  * @param grug_file_path Path to the grug source file to compile.
  * @return `NULL` on success, or an error message string on failure.
  */
-typedef const char *(*compile_grug_file_t)(void* state, const char *grug_file_path);
+typedef const char *(*test_compile_grug_file_t)(void* state, const char *grug_file_path);
 
 /**
  * @typedef init_globals_fn_dispatcher_t
  * @brief Function pointer type for initializing global variables for a grug file.
  */
-typedef void (*init_globals_fn_dispatcher_t)(void* state);
+typedef void (*test_init_globals_fn_dispatcher_t)(void* state);
 
 /**
  * @typedef on_fn_dispatcher_t
@@ -81,7 +81,7 @@ typedef void (*init_globals_fn_dispatcher_t)(void* state);
  * @param on_fn_name Name of the grug function to invoke.
  * @param args Array of `grug_value` arguments to pass to the function.
  */
-typedef void (*on_fn_dispatcher_t)(void* state, const char *on_fn_name, const union grug_value args[]);
+typedef void (*test_on_fn_dispatcher_t)(void* state, const char *on_fn_name, const union test_grug_value args[]);
 
 /**
  * @typedef dump_file_to_json_t
@@ -97,7 +97,7 @@ typedef void (*on_fn_dispatcher_t)(void* state, const char *on_fn_name, const un
  * @param output_json_path Path to write the produced JSON file.
  * @return `true` if an error occurred.
  */
-typedef bool (*dump_file_to_json_t)(void* state, const char *input_grug_path, const char *output_json_path);
+typedef bool (*test_dump_file_to_json_t)(void* state, const char *input_grug_path, const char *output_json_path);
 
 /**
  * @typedef generate_file_from_json_t
@@ -113,7 +113,7 @@ typedef bool (*dump_file_to_json_t)(void* state, const char *input_grug_path, co
  * @param output_grug_path Path to write the generated `.grug` source file.
  * @return `true` if an error occurred.
  */
-typedef bool (*generate_file_from_json_t)(void* state, const char *input_json_path, const char *output_grug_path);
+typedef bool (*test_generate_file_from_json_t)(void* state, const char *input_json_path, const char *output_grug_path);
 
 /**
  * @typedef game_fn_error_t
@@ -121,13 +121,13 @@ typedef bool (*generate_file_from_json_t)(void* state, const char *input_json_pa
  *
  * @param message The error message.
  */
-typedef void (*game_fn_error_t)(void* state, const char *message);
+typedef void (*test_game_fn_error_t)(void* state, const char *message);
 
 /**
  * Initializes a grug_state and returns a pointer to it.
  * this state will be passed to game functions
  */
-typedef void* (*create_grug_state_t) (
+typedef void* (*test_create_grug_state_t) (
 	const char* mod_api_dir,
 	const char* mods_dir
 );
@@ -138,7 +138,7 @@ typedef void* (*create_grug_state_t) (
  * Note that the order that create_grug_state is called may not match the order
  * that destroy_grug_state is called
  */
-typedef void (*destroy_grug_state_t)(void* grug_state);
+typedef void (*test_destroy_grug_state_t)(void* grug_state);
 
 /**
  * @brief Runs all grug tests.
@@ -160,14 +160,14 @@ typedef void (*destroy_grug_state_t)(void* grug_state);
  */
 void grug_tests_run(const char *tests_dir_path,
 					const char *mod_api_path,
-					create_grug_state_t create_grug_state,
-					destroy_grug_state_t destroy_grug_state,
-                    compile_grug_file_t compile_grug_file,
-                    init_globals_fn_dispatcher_t init_globals_fn_dispatcher,
-                    on_fn_dispatcher_t on_fn_dispatcher,
-                    dump_file_to_json_t dump_file_to_json,
-                    generate_file_from_json_t generate_file_from_json,
-                    game_fn_error_t game_fn_error,
+					test_create_grug_state_t create_grug_state,
+					test_destroy_grug_state_t destroy_grug_state,
+                    test_compile_grug_file_t compile_grug_file,
+                    test_init_globals_fn_dispatcher_t init_globals_fn_dispatcher,
+                    test_on_fn_dispatcher_t on_fn_dispatcher,
+                    test_dump_file_to_json_t dump_file_to_json,
+                    test_generate_file_from_json_t generate_file_from_json,
+                    test_game_fn_error_t game_fn_error,
                     const char *whitelisted_test);
 
 /**
@@ -182,7 +182,7 @@ void grug_tests_run(const char *tests_dir_path,
  * @param on_fn_path Path to the grug source file containing the function.
  */
 void grug_tests_runtime_error_handler(const char *reason,
-                                      enum grug_runtime_error_type type,
+                                      enum test_grug_runtime_error_type type,
                                       const char *on_fn_name,
                                       const char *on_fn_path);
 
@@ -190,40 +190,40 @@ void grug_tests_runtime_error_handler(const char *reason,
 /**
  * @brief Game functions that the bindings must call.
  */
-union grug_value game_fn_nothing              (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_magic                (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_initialize           (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_initialize_bool      (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_identity             (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_max                  (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_say                  (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_sin                  (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_cos                  (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_mega                 (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_get_false            (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_set_is_happy         (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_mega_f32             (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_mega_i32             (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_draw                 (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_blocked_alrm         (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_spawn                (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_has_resource         (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_has_entity           (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_has_string           (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_get_opponent         (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_get_os               (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_set_d                (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_set_opponent         (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_motherload           (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_motherload_subless   (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_offset_32_bit_f32    (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_offset_32_bit_i32    (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_offset_32_bit_string (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_talk                 (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_get_position         (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_set_position         (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_cause_game_fn_error  (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_call_on_b_fn         (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_store                (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_retrieve             (void* grug_state, const union grug_value args[]);
-union grug_value game_fn_box_number           (void* grug_state, const union grug_value args[]);
+union test_grug_value game_fn_nothing              (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_magic                (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_initialize           (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_initialize_bool      (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_identity             (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_max                  (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_say                  (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_sin                  (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_cos                  (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_mega                 (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_get_false            (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_set_is_happy         (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_mega_f32             (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_mega_i32             (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_draw                 (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_blocked_alrm         (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_spawn                (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_has_resource         (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_has_entity           (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_has_string           (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_get_opponent         (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_get_os               (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_set_d                (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_set_opponent         (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_motherload           (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_motherload_subless   (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_offset_32_bit_f32    (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_offset_32_bit_i32    (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_offset_32_bit_string (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_talk                 (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_get_position         (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_set_position         (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_cause_game_fn_error  (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_call_on_b_fn         (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_store                (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_retrieve             (void* grug_state, const union test_grug_value args[]);
+union test_grug_value game_fn_box_number           (void* grug_state, const union test_grug_value args[]);
