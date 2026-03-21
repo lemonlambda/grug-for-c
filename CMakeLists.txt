@@ -25,3 +25,12 @@ set_target_properties(test PROPERTIES C_STANDARD 99)
 target_compile_options(test PRIVATE ${GRUG_COMPILE_OPTIONS})
 target_link_options(test PRIVATE ${GRUG_LINK_OPTIONS})
 target_link_libraries(test PRIVATE grug)
+
+add_executable(example
+    test/example.c
+)
+
+set_target_properties(example PROPERTIES C_STANDARD 99)
+target_compile_options(example PRIVATE ${GRUG_COMPILE_OPTIONS})
+target_link_options(example PRIVATE ${GRUG_LINK_OPTIONS})
+target_link_libraries(example PRIVATE grug)
