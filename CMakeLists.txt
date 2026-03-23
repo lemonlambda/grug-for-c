@@ -7,10 +7,10 @@ project(grug
     LANGUAGES C
 )
 
-set(GRUG_COMPILE_OPTIONS "-Wall" "-Wextra" "-Werror" "-pedantic-errors" "-Wconversion" "-g" "-fsanitize=address,undefined")
+set(GRUG_COMPILE_OPTIONS "-Wall" "-Wextra" "-Werror" "-pedantic-errors" "-Wconversion" "-g" "-fsanitize=address,undefined" "-Wno-unused-function")
 set(GRUG_LINK_OPTIONS "-fsanitize=address,undefined")
 
-add_library(grug src/grug.c)
+add_library(grug src/grug_main.c src/grug_arena.c)
 
 set_target_properties(grug PROPERTIES C_STANDARD 99)
 target_compile_options(grug PRIVATE ${GRUG_COMPILE_OPTIONS})

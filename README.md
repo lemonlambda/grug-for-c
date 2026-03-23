@@ -24,6 +24,14 @@ on_bark(sound: string) {
 Here are your options as someone compiling grug:
 - GRUG_MALLOC_HEADER: optional, a header file to include in grug.c to replace allocation functions
 - GRUG_MALLOC: optional, a malloc() function to use with the same arguments as libc malloc
-- GRUG_FREE: optional, a free() function to use. Has the signiture "void free(void* ptr, size_t len)", so your allocator doesn't need to necessarily store the size for each allocation.
+- GRUG_FREE: optional, a free() function to use. Has the signature "void free(void* ptr, size_t len)", so your allocator doesn't need to necessarily store the size for each allocation.
 
-
+## Missing Features
+- amalgamated build
+    - take `grug_main.h` and globs it into `grug.h`, taking care to resolve the right includes
+    - take all the C files and other headers in src and globs them into `grug.c`, taking care to resolve includes accordingly.
+- tests don't pass yet
+    - note: make sure to update these! Currently is based on an old commit.
+- tokenization
+- parsing
+- special testing suite for the arena

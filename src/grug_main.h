@@ -4,6 +4,8 @@
 extern "C" {
 #endif
 
+#include "grug_arena.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -99,10 +101,18 @@ struct grug_error {
 	} data;
 };
 
-struct grug_error_list {
+/// Read-only view of an error list
+struct grug_error_array {
 	/// May be null of num_errors is 0.
 	struct grug_error* errors;
-	size_t num_errors;
+	size_t count;
+};
+
+struct grug_error_list {
+	struct grug_error* ptr;
+	size_t size;
+	size_t capacity;
+	struct grug_arena arena;
 };
 
 struct grug_updates_list {
@@ -174,7 +184,7 @@ struct grug_mod_dir {
 enum grug_token_type_enum {
 	GRUG_TOKEN_OPEN_PARENTHESIS,
 	GRUG_TOKEN_CLOSE_PARENTHESIS,
-	GRUG_TOPEN_OPEN_BRACE,
+	GRUG_TOKEN_OPEN_BRACE,
 	GRUG_TOKEN_CLOSE_BRACE,
 	GRUG_TOKEN_PLUS,
 	GRUG_TOKEN_MINUS,
@@ -413,6 +423,7 @@ struct grug_ast {
 
 	struct grug_helper_function* helper_function;
 	size_t helper_functions_count;
+	struct grug_arena arena;
 };
 
 /* AST */
@@ -482,7 +493,7 @@ struct grug_backend {
 	struct grug_backend_vtable* vtable;
 };
 
-// TODO: This should prolly be implementation specific
+// TODO: This should probably be implementation specific
 struct grug_init_settings {
 	// TODO: We probably want a way to define the mod_api as a string (at least for prototyping)
 	struct grug_string mod_api_path;
@@ -497,7 +508,7 @@ struct grug_init_settings grug_default_settings(void);
 struct grug_state* grug_init(struct grug_init_settings settings);
 
 /// Returns a list of errors that have occurred. This list is cleared (and the memory returned here is invalidated) at the start of grug_update().
-struct grug_error_list grug_get_errors(struct grug_state* gst);
+struct grug_error_array grug_get_errors(struct grug_state* gst);
 
 // returns true if registration is successful
 // returns false if not.
@@ -582,17 +593,17 @@ void grug_free_tokens(struct grug_tokens tokens);
 
 void grug_free_ast(struct grug_ast ast);
 
-struct grug_tokens grug_to_tokens(struct grug_string grug);
-struct grug_ast tokens_to_ast(struct grug_tokens tokens);
-struct grug_tokens ast_to_tokens(struct grug_ast ast);
-struct grug_string tokens_to_grug(struct grug_tokens tokens);
-struct grug_ast json_to_ast(struct grug_string json);
-struct grug_string ast_to_json(struct grug_ast ast);
+struct grug_tokens grug_to_tokens(struct grug_string grug, struct grug_error_list* o_errors);
+struct grug_ast tokens_to_ast(struct grug_tokens tokens, struct grug_error_list* o_errors);
+struct grug_tokens ast_to_tokens(struct grug_ast ast, struct grug_error_list* o_errors);
+struct grug_string tokens_to_grug(struct grug_tokens tokens, struct grug_error_list* o_errors);
+struct grug_ast json_to_ast(struct grug_string json, struct grug_error_list* o_errors);
+struct grug_string ast_to_json(struct grug_ast ast, struct grug_error_list* o_errors);
 
-struct grug_ast grug_to_ast(struct grug_string grug);
-struct grug_string ast_to_grug(struct grug_ast ast);
-struct grug_string grug_to_json(struct grug_string grug);
-struct grug_string json_to_grug(struct grug_string json);
+struct grug_ast grug_to_ast(struct grug_string grug, struct grug_error_list* o_errors);
+struct grug_string ast_to_grug(struct grug_ast ast, struct grug_error_list* o_errors);
+struct grug_string grug_to_json(struct grug_string grug, struct grug_error_list* o_errors);
+struct grug_string json_to_grug(struct grug_string json, struct grug_error_list* o_errors);
 
 #ifdef __cplusplus
 }
