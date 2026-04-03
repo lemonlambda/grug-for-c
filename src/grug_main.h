@@ -110,7 +110,7 @@ struct grug_error {
 
 struct grug_updates_list {
 	size_t count;
-	struct grug_file** updates;
+	struct grug_file* updates;
 };
 
 struct grug_runtime_error_handler {
@@ -147,15 +147,6 @@ struct grug_file {
 
 	/// Null if there is no error in this file
 	struct grug_error* error;
-
-	/// PRIVATE, When this file was last modified
-	int64_t _mtime;
-
-	/// PRIVATE, when resources seen by this script were last modified
-	int64_t _resource_mtimes;
-	size_t _resource_mtimes_size;
-
-	bool _seen;
 };
 
 struct grug_mod_dir {
