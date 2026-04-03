@@ -77,9 +77,10 @@ const struct grug_mod_dir* grug_get_mods(struct grug_state* gst) {
 	return 0;
 }
 
-grug_id grug_create_entity(struct grug_state* gst, grug_file_id script) {
+grug_id grug_create_entity(struct grug_state* gst, grug_file_id script, grug_object_id me_id) {
 	(void)gst;
 	(void)script;
+	(void)me_id;
 	// TODO: implement
 	return 0;
 }

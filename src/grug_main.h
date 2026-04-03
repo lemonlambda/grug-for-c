@@ -29,7 +29,7 @@ union grug_value {
 	bool _bool;
 	/// Null terminated, this doesn't use the grug_string type because benchmarks showed adding the extra 8 bytes per value halved argument passing performance even for non-string types.
 	char const* _string;
-	grug_id _id;
+	grug_object_id _id;
 };
 
 /// combines a null terminated C string with a length
@@ -46,8 +46,9 @@ struct grug_state;
 // These fields should be treated as readonly by the game
 // Backends can modify `data` when initialing or deinitializing data
 struct grug_entity {
-	grug_id id;
+	grug_entity_id id;
 	grug_file_id file_id;
+	grug_object_id me;
 	void* data;
 };
 
@@ -529,22 +530,17 @@ grug_file_id grug_compile_file_from_str(struct grug_state* gst, const char* path
 // Compiles and inserts all grug files in the mods directory
 const struct grug_mod_dir* grug_get_mods(struct grug_state* gst);
 
-// TODO: would it make any sense to be able to attach that grug-side entity data to an object after the fact instead of at creation?
-// TODO: alternatively, does it make sense to be able to strip the entity part of an ID?
 // Instantiate an entity from a script
-grug_id grug_create_entity(struct grug_state* gst, grug_file_id script);
+grug_entity_id grug_create_entity(struct grug_state* gst, grug_file_id script, grug_object_id me_id);
 
 // Gets the file id of an entity, or 0 (null id) if the ID given isn't an entity or doesn't exist.
-grug_file_id grug_entity_get_file_id(struct grug_state* gst, grug_id entity);
+grug_file_id grug_entity_get_file_id(struct grug_state* gst, grug_entity_id entity);
 
 // Gets the entity data of an entity, or NULL if the ID given isn't an entity or doesn't exist.
-struct grug_entity* grug_entity_get_data(struct grug_state* gst, grug_id entity);
+struct grug_entity* grug_entity_get_data(struct grug_state* gst, grug_entity_id entity);
 
-// Create an object ID.
-grug_id grug_create_object(struct grug_state* gst);
-
-// Destroy the data associated with an entity. Does nothing If called on a non-entity object or non-existent id. TODO: should this have an error?
-void grug_deinit_entity(struct grug_state* gst, grug_id entity);
+// Destroy the data associated with an entity. Does nothing if called on a non-existent entity. TODO: should this have an error?
+void grug_deinit_entity(struct grug_state* gst, grug_entity_id entity);
 
 /// The values returned are entirely allocated temporarily and are 'freed' when grug_update is called again.
 struct grug_updates_list grug_update(struct grug_state* gst);
@@ -559,8 +555,8 @@ void grug_set_fast_mode(struct grug_state* gst, bool fast);
 
 // returns false if on function could not be executed, if the id given isn't an entity, or if there was a runtime error
 // `args` can be NULL if there are no arguments
-bool grug_call_on_function_raw(struct grug_state* gst, grug_id entity, grug_on_fn_id on_fn_id, union grug_value* args);
-bool grug_call_on_function(struct grug_state* gst, grug_id entity, grug_on_fn_id on_fn_id, union grug_value* args, size_t args_len);
+bool grug_call_on_function_raw(struct grug_state* gst, grug_entity_id entity, grug_on_fn_id on_fn_id, union grug_value* args);
+bool grug_call_on_function(struct grug_state* gst, grug_entity_id entity, grug_on_fn_id on_fn_id, union grug_value* args, size_t args_len);
 
 #define GRUG_CALL_ARGLESS(_state, _entity, _on_fn_id) \
 		grug_call_on_function(_state, _entity, _on_fn_id, NULL, 0); \
@@ -573,7 +569,7 @@ bool grug_call_on_function(struct grug_state* gst, grug_id entity, grug_on_fn_id
 static inline union grug_value GRUG_ARG_NUMBER(double v)      {union grug_value r; r._number = v; return r;}
 static inline union grug_value GRUG_ARG_BOOL(bool v)          {union grug_value r; r._bool = v  ; return r;}
 static inline union grug_value GRUG_ARG_STRING(char const* v) {union grug_value r; r._string = v; return r;}
-static inline union grug_value GRUG_ARG_ID(grug_id v)         {union grug_value r; r._id = v    ; return r;}
+static inline union grug_value GRUG_ARG_ID(grug_object_id v)         {union grug_value r; r._id = v    ; return r;}
 #pragma GCC diagnostic pop
 
 // This is basically a wrapper of malloc, but it's here to allow for a sensible alloc -> free lifetime with a pair of functions
