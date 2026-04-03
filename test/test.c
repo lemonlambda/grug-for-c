@@ -1,5 +1,6 @@
 #include <grug.h>
 
+#include "grug_main.h"
 #include "tests.h"
 
 #include <assert.h>
@@ -131,7 +132,9 @@ static void on_fn_dispatcher(void* grug_state, const char *on_fn_name, const uni
 static bool dump_file_to_json(void* grug_state, const char *input_grug_path, const char *output_json_path) {
 	(void)grug_state;
     struct grug_string grug_file = alloc_and_read_entire_file(input_grug_path);
-    struct grug_string grug_json = grug_to_json(grug_file);
+    // TODO: do something with the possible error
+    struct grug_error e = {0};
+    struct grug_string grug_json = grug_to_json(grug_file, &e);
     // TODO: handle potential syntax errors
     write_entire_file(output_json_path, grug_json);
     grug_free_string(grug_json);
@@ -142,7 +145,9 @@ static bool dump_file_to_json(void* grug_state, const char *input_grug_path, con
 static bool generate_file_from_json(void* grug_state, const char *input_json_path, const char *output_grug_path) {
 	(void)grug_state;
     struct grug_string grug_json = alloc_and_read_entire_file(input_json_path);
-    struct grug_string grug_file = json_to_grug(grug_json);
+    // TODO: do something with the possible error
+    struct grug_error e = {0};
+    struct grug_string grug_file = json_to_grug(grug_json, &e);
     // TODO: handle potential syntax errors
     write_entire_file(output_grug_path, grug_file);
     grug_free_string(grug_json);

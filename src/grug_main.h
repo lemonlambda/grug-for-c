@@ -38,7 +38,7 @@ struct grug_string {
 	size_t len;
 };
 
-#define GRUG_WRAP_STRING(_str) (struct grug_string){.ptr = (char*)(_str), .len = strlen(_str)};
+#define GRUG_WRAP_STRING(_str) (struct grug_string){.ptr = (char*)(_str), .len = strlen(_str)}
 
 struct grug_state;
 
@@ -67,45 +67,19 @@ typedef uint32_t grug_error_type;
 
 struct grug_error {
 	grug_error_type error_type;
-	/// A message that can be printed instead of parsing the data part of this struct
 	struct grug_string message;
-	union {
-		struct {
-			/// The file where the error occurred
-			struct grug_string file_name;
-			grug_file_id file;
-			/// The function where the error occurred
-			struct grug_string function_name;
-			/// Note: will be set the most recently called on fn if the error occurred in a helper fn
-			grug_on_fn_id function;
-			/// The line number where the error occurred
-			size_t line_number;
-			/// The column number where the error occurred
-			size_t column_number;
-			/// the character index into the file where the error occurred.
-			size_t first_character;
-			/// The number of characters to highlight when reporting the error (how many characters to put the squiggly lines under)
-			size_t num_characters;
-		} runtime;
-		struct {
-			/// The file where the error occurred
-			struct grug_string file_name;
-			grug_file_id file;
-			/// The function where the error occurred
-			struct grug_string function_name;
-			/// Note: will be set 0 (no id) error occurred in a helper fn
-			grug_on_fn_id function;
-			/// The line number where the error occurred
-			size_t line_number;
-			/// The column number where the error occurred
-			size_t column_number;
-			/// the character index into the file where the error occurred.
-			size_t first_character;
-			/// The number of characters to highlight when reporting the error (how many characters to put the squiggly lines under)
-			size_t num_characters;
-			struct grug_string error_code;
-		} compiletime;
-	} data;
+	/// custom implementation-specific message that doesn't necessarily pass the testing suite
+	struct grug_string custom_message;
+	/// Information for if the error occurred within a grug script
+	struct {
+		/// The file where the error occurred
+		struct grug_string file_name;
+		grug_file_id file;
+		/// the character index into the file where the error occurred.
+		size_t offset;
+		/// The number of characters to highlight when reporting the error (how many characters to put the squiggly lines under)
+		size_t num_characters;
+	} file;
 };
 
 struct grug_updates_list {
@@ -175,6 +149,7 @@ enum grug_token_type_enum {
 	GRUG_TOKEN_MULTIPLICATION,
 	GRUG_TOKEN_DIVISION,
 	GRUG_TOKEN_COMMA,
+	GRUG_TOKEN_COLON,
 	GRUG_TOKEN_NEWLINE,
 	GRUG_TOKEN_EQUALS,
 	GRUG_TOKEN_NOT_EQUALS,

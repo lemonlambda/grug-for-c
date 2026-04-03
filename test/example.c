@@ -21,7 +21,7 @@ bool find_file(struct grug_mod_dir const* dir, grug_file_id* out_id, char const*
         struct grug_file* file = &dir->files[file_index];
         // while looking for file is not the right place to report errors, but they need to be reported somewhere and doing it here works.
         if(file->error) {
-            printf("File %s has an error on line %i: %s\n", file->name.ptr, (int)file->error->data.compiletime.line_number, file->error->message.ptr);
+            printf("File %s has an error: %s\n", file->name.ptr, file->error->message.ptr);
         }
 
         if(strcmp(file->name.ptr, name)) {
@@ -91,12 +91,12 @@ int main(void) {
     // this is the object / entity ID of the dog
     // The initialization of members might call game fns, so beware that creating an entity may call game fns
     // An entity is just an object ID with some extra grug-side data attached to it.
-    grug_id dog1 = grug_create_entity(gst, labrador_script);
+    grug_entity_id dog1 = grug_create_entity(gst, labrador_script, 1);
 	assert(dog1);
     // tell this dog that it has spawned into the world
     GRUG_CALL_ARGLESS(gst, dog1, on_spawn_fn_id);
     
-    grug_id dog2 = grug_create_entity(gst, labrador_script);
+    grug_entity_id dog2 = grug_create_entity(gst, labrador_script, 2);
     GRUG_CALL_ARGLESS(gst, dog2, on_spawn_fn_id);
     
     GRUG_CALL(gst, dog1, on_bark_fn_id, 1, GRUG_ARG_STRING("Woof"));
@@ -109,12 +109,12 @@ int main(void) {
         struct grug_updates_list updates = grug_update(gst);
 
         for(size_t i=0; i<updates.count; ++i) {
-            struct grug_file* file = updates.updates[i];
-            if(file->error) {
-                printf("File %s has an error: %s\n", file->name.ptr, file->error->message.ptr);
+            struct grug_file file = updates.updates[i];
+            if(file.error) {
+                printf("File %s has an error: %s\n", file.name.ptr, file.error->message.ptr);
             }
 
-            if(file->id == labrador_script) {
+            if(file.id == labrador_script) {
                 // re-call on_spawn - since the members get reset upon reload.
                 GRUG_CALL_ARGLESS(gst, dog1, on_spawn_fn_id);
                 GRUG_CALL_ARGLESS(gst, dog1, on_spawn_fn_id);

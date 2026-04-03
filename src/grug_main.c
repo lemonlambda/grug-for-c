@@ -182,65 +182,243 @@ void grug_free_ast(struct grug_ast ast)  {
 	grug_arena_deinit(&ast.arena);
 }
 
+static void add_token(struct grug_tokens* tokens, size_t* capacity, struct grug_token token) {
+	if(*capacity == tokens->tokens_len) {
+		size_t new_capacity = *capacity * 3 / 2 + 1;
+		struct grug_token* new_tokens = grug_realloc(tokens->tokens, *capacity, new_capacity);
+		assert(new_tokens);
+		*capacity = new_capacity;
+		tokens->tokens = new_tokens;
+	}
+	tokens->tokens[tokens->tokens_len] = token;
+	tokens->tokens_len += 1;
+}
+
 struct grug_tokens grug_to_tokens(struct grug_string grug, struct grug_error* o_error) {
 	(void)o_error;
-
-	do {
-		char c = grug.ptr[0];
-		struct grug_token token = {0};
+	struct grug_tokens tokens = {
+		.tokens = 0,
+		.tokens_len = 0,
+	};
+	size_t tokens_capacity;
+	char* src = grug.ptr;
+	size_t src_len = grug.len;
+	size_t i = 0;
+	// TODO: clean up this horrible copy-paste of the grug-for-python code unceremoniously translated line-for-line without splitting things into functions.
+	while(i < grug.len) {
+		char c = src[i];
 		if(c == '(') {
-			token.type = GRUG_TOKEN_OPEN_PARENTHESIS;
-		} else if(c == ')') {
-			token.type = GRUG_TOKEN_CLOSE_PARENTHESIS;
-		} else if(c == '{') {
-			token.type = GRUG_TOKEN_OPEN_BRACE;
-		} else if(c == '}') {
-			token.type = GRUG_TOKEN_CLOSE_BRACE;
-		} else if(c == '+') {
-			token.type = GRUG_TOKEN_PLUS;
-		} else if(c == '-') {
-			token.type = GRUG_TOKEN_MINUS;
-		} else if(c == '*') {
-			token.type = GRUG_TOKEN_MULTIPLICATION;
-		} else if(c == '/') {
-			token.type = GRUG_TOKEN_DIVISION;
-		} else if(c == ',') {
-			token.type = GRUG_TOKEN_COMMA;
-		} else if(c == '\n') {
-			// TODO: handle /r/n (windows style) and /r (mac style) newlines
-			token.type = GRUG_TOKEN_NEWLINE;
-		} else if(c == '=') {
-			token.type = GRUG_TOKEN_EQUALS;
-		} else if(c == '!' && grug.ptr[1] == '=') {
-			token.type = GRUG_TOKEN_NOT_EQUALS;
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_OPEN_PARENTHESIS, {.len = 0}});
+			i += 1;
 		}
-		else {
-			assert(false);
+		else if(c == ')') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_CLOSE_PARENTHESIS, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
 		}
-	} while(grug.len > 0);
-	// GRUG_TOKEN_NOT_EQUALS
-	// GRUG_TOKEN_ASSIGNMENT
-	// GRUG_TOKEN_GREATER_OR_EQUAL
-    // GRUG_TOKEN_GREATER
-    // GRUG_TOKEN_LESS_OR_EQUAL
-    // GRUG_TOKEN_LESS
-    // GRUG_TOKEN_AND
-    // GRUG_TOKEN_OR
-    // GRUG_TOKEN_NOT
-    // GRUG_TOKEN_TRUE
-    // GRUG_TOKEN_FALSE
-    // GRUG_TOKEN_IF
-    // GRUG_TOKEN_ELSE
-    // GRUG_TOKEN_WHILE
-    // GRUG_TOKEN_BREAK
-    // GRUG_TOKEN_RETURN
-    // GRUG_TOKEN_CONTINUE
-    // GRUG_TOKEN_SPACE
-    // GRUG_TOKEN_INDENTATION
-    // GRUG_TOKEN_STRING
-    // GRUG_TOKEN_WORD
-    // GRUG_TOKEN_NUMBER
-    // GRUG_TOKEN_COMMENT
+		else if(c == '{') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_OPEN_BRACE, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
+		}
+		else if(c == '}') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_CLOSE_BRACE, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
+		}
+		else if(c == '+') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_PLUS, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
+		}
+		else if(c == '-') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_MINUS, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
+		}
+		else if(c == '*'){
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_MULTIPLICATION, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
+		}
+		else if(c == '/') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_DIVISION, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
+		}
+		else if(c == ',') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_COMMA, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
+		}
+		else if(c == ':') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_COLON, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
+		}
+		else if(c == '\n') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_NEWLINE, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
+		}
+		else if(c == '=' && i + 1 < src_len && src[i + 1] == '=') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_EQUALS, .contents = GRUG_WRAP_STRING("==")});
+			i += 2;
+		}
+		else if(c == '!' && i + 1 < src_len && src[i + 1] == '=') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_NOT_EQUALS, .contents = GRUG_WRAP_STRING("!=")});
+			i += 2;
+		}
+		else if(c == '=') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_ASSIGNMENT, .contents = {.ptr = &src[i], .len = 1}});
+			i += 1;
+		}
+		else if(c == '>' && i + 1 < src_len && src[i + 1] == '=') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_GREATER_OR_EQUAL, .contents = GRUG_WRAP_STRING(">=")});
+			i += 2;
+		}
+		else if(c == '>') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_GREATER, .contents = GRUG_WRAP_STRING(">")});
+			i += 1;
+		}
+		else if(c == '<' && i + 1 < src_len && src[i + 1] == '=') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_LESS_OR_EQUAL, .contents = GRUG_WRAP_STRING("<=")});
+			i += 2;
+		}
+		else if(c == '<') {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_LESS, .contents = GRUG_WRAP_STRING("<")});
+			i += 1;
+		}
+		else if((i+sizeof("and") < src_len && memcmp(&src[i], "and", sizeof("and")) == 0) && ((i + 3) >= src_len || (!(src[i + 3] >= '0' && src[i + 3] <= '9') || src[i + 3] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_AND, .contents = GRUG_WRAP_STRING("and")});
+			i += 3;
+		}
+		else if((i+sizeof("or") < src_len && memcmp(&src[i], "or", sizeof("or")) == 0) && ((i + 2) >= src_len || (!(src[i + 2] >= '0' && src[i + 2] <= '9') || src[i + 2] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_OR, .contents = GRUG_WRAP_STRING("or")});
+			i += 2;
+		}
+		else if((i+sizeof("not") < src_len && memcmp(&src[i], "not", sizeof("not")) == 0) && ((i + 3) >= src_len || (!(src[i + 3] >= '0' && src[i + 3] <= '9') || src[i + 3] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_NOT, .contents = GRUG_WRAP_STRING("not")});
+			i += 3;
+		}
+		else if((i+sizeof("true") < src_len && memcmp(&src[i], "true", sizeof("true")) == 0) && ((i + 4) >= src_len || (!(src[i + 4] >= '0' && src[i + 4] <= '9') || src[i + 4] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_TRUE, .contents = GRUG_WRAP_STRING("true")});
+			i += 4;
+		}
+		else if((i+sizeof("false") < src_len && memcmp(&src[i], "false", sizeof("false")) == 0) && ((i + 5) >= src_len || (!(src[i + 5] >= '0' && src[i + 5] <= '9') || src[i + 5] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_FALSE, .contents = GRUG_WRAP_STRING("false")});
+			i += 5;
+		}
+		else if((i+sizeof("if") < src_len && memcmp(&src[i], "if", sizeof("if")) == 0) && ((i + 2) >= src_len || (!(src[i + 2] >= '0' && src[i + 2] <= '9') || src[i + 2] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_IF, .contents = GRUG_WRAP_STRING("if")});
+			i += 2;
+		}
+		else if((i+sizeof("else") < src_len && memcmp(&src[i], "else", sizeof("else")) == 0) && ((i + 4) >= src_len || (!(src[i + 4] >= '0' && src[i + 4] <= '9') || src[i + 4] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_ELSE, .contents = GRUG_WRAP_STRING("else")});
+			i += 4;
+		}
+		else if((i+sizeof("while") < src_len && memcmp(&src[i], "while", sizeof("while")) == 0) && ((i + 5) >= src_len || (!(src[i + 5] >= '0' && src[i + 5] <= '9') || src[i + 5] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_WHILE, .contents = GRUG_WRAP_STRING("while")});
+			i += 5;
+		}
+		else if((i+sizeof("break") < src_len && memcmp(&src[i], "break", sizeof("break")) == 0) && ((i + 5) >= src_len || (!(src[i + 5] >= '0' && src[i + 5] <= '9') || src[i + 5] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_BREAK, .contents = GRUG_WRAP_STRING("break")});
+			i += 5;
+		}
+		else if((i+sizeof("return") < src_len && memcmp(&src[i], "return", sizeof("return")) == 0) && ((i + 6) >= src_len || (!(src[i + 6] >= '0' && src[i + 6] <= '9') || src[i + 6] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_RETURN, .contents = GRUG_WRAP_STRING("return")});
+			i += 6;
+		}
+		else if((i+sizeof("continue") < src_len && memcmp(&src[i], "continue", sizeof("continue")) == 0) && ((i + 8) >= src_len || (!(src[i + 8] >= '0' && src[i + 8] <= '9') || src[i + 8] == '_'))) {
+			add_token(&tokens, &tokens_capacity, (struct grug_token){.type = GRUG_TOKEN_CONTINUE, .contents = GRUG_WRAP_STRING("continue")});
+			i += 8;
+		}
+	}
+
+	// 	elif c == " ":
+	// 		if i + 1 >= src_len or src[i + 1] != " ":
+	// 			tokens.append(Token(TokenType.SPACE_TOKEN, " "))
+	// 			i += 1
+	// 			continue
+
+	// 		old_i = i
+	// 		while i < src_len and src[i] == " ":
+	// 			i += 1
+
+	// 		spaces = i - old_i
+
+	// 		if spaces % SPACES_PER_INDENT != 0:
+	// 			raise TokenizerError(
+	// 				f"Encountered {spaces} spaces, while indentation expects multiples of {SPACES_PER_INDENT} spaces, on line {self.get_character_line_number(i)}"
+	// 			)
+
+	// 		tokens.append(Token(TokenType.INDENTATION_TOKEN, " " * spaces))
+	// 	elif c == '"':
+	// 		open_quote_index = i
+	// 		i += 1
+	// 		start = i
+	// 		while i < src_len and src[i] != '"':
+	// 			if src[i] == "\0":
+	// 				raise TokenizerError(
+	// 					f"Unexpected null byte on line {self.get_character_line_number(i)}"
+	// 				)
+	// 			elif src[i] == "\\" and i + 1 < src_len and src[i + 1] in "\r\n":
+	// 				raise TokenizerError(
+	// 					f"Unexpected line break in string on line {self.get_character_line_number(i)}"
+	// 				)
+	// 			i += 1
+	// 		if i >= src_len:
+	// 			raise TokenizerError(
+	// 				f'Unclosed " on line {self.get_character_line_number(open_quote_index)}'
+	// 			)
+	// 		tokens.append(Token(TokenType.STRING_TOKEN, src[start:i]))
+	// 		i += 1
+	// 	elif c.isalpha() or c == "_":
+	// 		start = i
+	// 		while i < src_len and (src[i].isalnum() or src[i] == "_"):
+	// 			i += 1
+	// 		tokens.append(Token(TokenType.WORD_TOKEN, src[start:i]))
+	// 	elif c.isdigit():
+	// 		start = i
+	// 		seen_period = False
+	// 		i += 1
+	// 		while i < src_len and (src[i].isdigit() or src[i] == "."):
+	// 			if src[i] == ".":
+	// 				if seen_period:
+	// 					raise TokenizerError(
+	// 						f"Encountered two '.' periods in a number on line {self.get_character_line_number(i)}"
+	// 					)
+	// 				seen_period = True
+	// 			i += 1
+
+	// 		if src[i - 1] == ".":
+	// 			raise TokenizerError(
+	// 				f"Missing digit after decimal point in '{src[start:i]}'"
+	// 			)
+
+	// 		tokens.append(Token(TokenType.NUMBER_TOKEN, src[start:i]))
+	// 	elif c == "#":
+	// 		i += 1
+	// 		if i >= src_len or src[i] != " ":
+	// 			raise TokenizerError(
+	// 				f"Expected a single space after the '#' on line {self.get_character_line_number(i)}"
+	// 			)
+	// 		i += 1
+	// 		start = i
+	// 		while i < src_len and src[i] not in "\r\n":
+	// 			if src[i] == "\0":
+	// 				raise TokenizerError(
+	// 					f"Unexpected null byte on line {self.get_character_line_number(i)}"
+	// 				)
+	// 			i += 1
+
+	// 		comment_len = i - start
+	// 		if comment_len == 0:
+	// 			raise TokenizerError(
+	// 				f"Expected the comment to contain some text on line {self.get_character_line_number(i)}"
+	// 			)
+
+	// 		if src[i - 1].isspace():
+	// 			raise TokenizerError(
+	// 				f"A comment has trailing whitespace on line {self.get_character_line_number(i)}"
+	// 			)
+
+	// 		tokens.append(Token(TokenType.COMMENT_TOKEN, src[start:i]))
+	// 	else:
+	// 		raise TokenizerError(
+	// 			f"Unrecognized character '{c}' on line {self.get_character_line_number(i)}"
+	// 		)
+
 	return (struct grug_tokens){0};
 }
 
