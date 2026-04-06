@@ -544,7 +544,21 @@ struct grug_tokens grug_to_tokens(struct grug_string grug, struct grug_error* o_
 		}
 	}
 
-	return (struct grug_tokens){0};
+	// Copy all of the tokens
+	struct grug_tokens result = (struct grug_tokens) {
+		.tokens = GRUG_MALLOC(tokens.tokens_len * sizeof(*tokens.tokens)),
+		.tokens_len = tokens.tokens_len,
+	};
+	for(size_t i = 0; i < tokens.tokens_len; i += 1) {
+		result.tokens[i] = (struct grug_token) {
+			.type = tokens.tokens[i].type,
+			// grug_copy_string does not actually check the null terminator, but it will always include one in the copy.
+			// ALL of the strings from the tokenization are either statically allocated, or they are a window into the original format string.
+			.contents = grug_copy_string(tokens.tokens[i].contents),
+		};
+	}
+	GRUG_FREE(tokens.tokens, tokens_capacity * sizeof(*tokens.tokens));
+	return result;
 }
 
 struct grug_ast tokens_to_ast(struct grug_tokens tokens, struct grug_error* o_error) {
