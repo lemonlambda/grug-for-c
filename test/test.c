@@ -98,7 +98,7 @@ struct grug_string alloc_and_read_entire_file(char const* path) {
     size_t size = (size_t)ftell(f);
     fseek(f, 0, SEEK_SET);
     struct grug_string str = grug_alloc_string(size);
-    int result = fread((char*)str.ptr, str.len, 1, f);
+    size_t result = fread((char*)str.ptr, str.len, 1, f);
     if (result != 0) {
         printf("Failed to read the file"); // TODO: handle this error better
         exit(1);
