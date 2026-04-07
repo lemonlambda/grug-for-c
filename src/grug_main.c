@@ -192,11 +192,10 @@ struct grug_error grug_copy_error(struct grug_error src) {
 		custom_message = grug_copy_string(src.custom_message);
 	}
 
-	struct grug_file_location file;
+	struct grug_file_location file = {0};
 	switch (src.error_type) {
 		case GRUG_ERROR_TYPE_NONE:
 		case GRUG_ERROR_TYPE_INIT: {
-			file = (struct grug_file_location){0};
 			break;
 		}
 		case GRUG_ERROR_TYPE_COMPILE:
