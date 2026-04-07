@@ -52,10 +52,8 @@ int main(void) {
 
     // Grab the "ID" of the Dog::on_spawn and Dog::on_bark functions
     // This is not a normal grug object id, but a special function id
-    grug_on_fn_id on_spawn_fn_id;
-    bool found_on_spawn = false;
-    grug_on_fn_id on_bark_fn_id;
-    bool found_on_bark = false;
+    grug_on_fn_id on_spawn_fn_id = (unsigned long)-1;
+    grug_on_fn_id on_bark_fn_id = (unsigned long)-1;
     
     struct grug_on_fns on_fns = grug_get_fn_ids(gst);
     for(size_t index = 0; index < on_fns.count; ++index) {
@@ -64,20 +62,18 @@ int main(void) {
         if(strcmp(entry.entity_name.ptr, "Dog")) {
             if(strcmp(entry.on_fn_name.ptr, "on_spawn")) {
                 on_spawn_fn_id = entry.id;
-                found_on_spawn = true;
             } else if(strcmp(entry.on_fn_name.ptr, "on_bark")) {
                 on_bark_fn_id = entry.id;
-                found_on_bark = true;
             }
         }
     }
 
-    if(!found_on_bark || !found_on_spawn) {
+    if (on_spawn_fn_id == (unsigned long)-1 || on_bark_fn_id == (unsigned long)-1) {
         printf("Failed to find an on fn, is the mod_api.json correct?\n");
         grug_deinit(gst);
         return 1;
     }
-    
+
     // your file object is simple a handle to the script, and isn't the script itself 
     grug_file_id labrador_script;
     bool found_labrador_script = find_file(grug_get_mods(gst), &labrador_script, "labrador-Dog.grug");
